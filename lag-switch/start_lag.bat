@@ -1,0 +1,3 @@
+@echo off
+echo Iniciando Lag Switch (Modo Admin)...
+python lag_switch.py

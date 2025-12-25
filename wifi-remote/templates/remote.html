@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Wi-Fi Remote 🖱️</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            touch-action: none; /* Disable default gestures */
+        }
+        header {
+            text-align: center;
+            padding: 10px;
+            background: #1f1f1f;
+            border-bottom: 1px solid #333;
+        }
+        #touchpad {
+            flex: 1;
+            background: #1e1e1e;
+            margin: 10px;
+            border-radius: 15px;
+            border: 2px dashed #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #555;
+            font-size: 20px;
+        }
+        #controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            padding: 10px;
+            background: #1f1f1f;
+        }
+        .btn {
+            background: #333;
+            border: none;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 18px;
+            active-background: #555;
+        }
+        .btn:active { background: #007fd4; }
+        #keyboard-area {
+            padding: 10px;
+            display: flex;
+            background: #1f1f1f;
+        }
+        #text-input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            background: #333;
+            color: white;
+        }
+        #btn-send {
+            margin-left: 10px;
+            background: #007fd4;
+            width: 50px;
+        }
+    </style>
+</head>
+<body>
+    <header>Wi-Fi Remote 📱</header>
+    
+    <div id="touchpad">Touchpad Area</div>
+
+    <div id="keyboard-area">
+        <input type="text" id="text-input" placeholder="Escribir...">
+        <button class="btn" id="btn-send" onclick="sendText()">➤</button>
+    </div>
+
+    <div id="controls">
+        <button class="btn" onclick="sendCommand('click_left')">L-Click</button>
+        <button class="btn" onclick="sendCommand('media_play_pause')">⏯ Play</button>
+        <button class="btn" onclick="sendCommand('click_right')">R-Click</button>
+        
+        <button class="btn" onclick="sendCommand('vol_down')">🔉 -</button>
+        <button class="btn" onclick="sendCommand('media_mute')">🔇 Mute</button>
+        <button class="btn" onclick="sendCommand('vol_up')">🔊 +</button>
+    </div>
+
+    <script>
+        // Touchpad Logic
+        const pad = document.getElementById('touchpad');
+        let startX, startY;
+        const Sensitivity = 1.5;
+
+        pad.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        }, {passive: false});
+
+        pad.addEventListener('touchmove', (e) => {
+            e.preventDefault(); // Stop scrolling
+            const x = e.touches[0].clientX;
+            const y = e.touches[0].clientY;
+            
+            const dx = (x - startX) * Sensitivity;
+            const dy = (y - startY) * Sensitivity;
+
+            fetch(`/api/mouse?dx=${dx}&dy=${dy}`);
+            
+            startX = x; // Reset for relative movement
+            startY = y;
+        }, {passive: false});
+
+        pad.addEventListener('click', () => {
+             // Tap to click
+             sendCommand('click_left');
+        });
+
+        function sendCommand(cmd) {
+            fetch(`/api/cmd/${cmd}`);
+        }
+
+        function sendText() {
+            const txt = document.getElementById('text-input').value;
+            if(txt) {
+                fetch(`/api/type?text=${encodeURIComponent(txt)}`);
+                document.getElementById('text-input').value = "";
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local AirDrop ✈️</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 { margin-bottom: 20px; font-weight: 300; }
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed #444;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: #1e1e1e;
+            transition: 0.3s;
+            cursor: pointer;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #007fd4;
+            background: #252526;
+        }
+        .upload-zone h3 { margin: 0; color: #007fd4; }
+        .upload-zone p { color: #888; font-size: 0.9em; }
+        #fileInput { display: none; }
+        
+        /* File List */
+        .file-list {
+            background: #1e1e1e;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            border-bottom: 1px solid #333;
+        }
+        .file-item:last-child { border-bottom: none; }
+        .file-info { display: flex; align-items: center; gap: 15px; overflow: hidden; }
+        .file-icon { font-size: 1.5em; }
+        .file-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .btn-download {
+            background: #333;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-download:hover { background: #007fd4; }
+        
+        /* Progress Bar */
+        #progress-container {
+            display: none;
+            width: 100%;
+            background: #333;
+            height: 5px;
+            border-radius: 5px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background: #007fd4;
+            transition: width 0.1s;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <center><h1>Local AirDrop ✈️</h1></center>
+
+        <!-- UPLOAD SECTION -->
+        <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            <h3>Subir Archivos</h3>
+            <p>Toca o arrastra aquí para enviar al PC</p>
+            <input type="file" id="fileInput" multiple onchange="handleFiles(this.files)">
+            
+            <div id="progress-container">
+                <div id="progress-bar"></div>
+            </div>
+            <p id="status-text" style="margin-top:10px; display:none;">Subiendo...</p>
+        </div>
+
+        <!-- DOWNLOAD SECTION -->
+        <h3 style="margin-left: 10px; color: #888;">Archivos en PC:</h3>
+        <div class="file-list" id="fileList">
+            <!-- Files injected here by JS -->
+            <div style="padding:20px; text-align:center; color:#555;">Cargando...</div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        
+        // Drag & Drop visual effects
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            }, false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+            }, false);
+        });
+        dropZone.addEventListener('drop', (e) => {
+            handleFiles(e.dataTransfer.files);
+        }, false);
+
+        function handleFiles(files) {
+            if (!files.length) return;
+            
+            const formData = new FormData();
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+
+            // UI Updates
+            document.getElementById('progress-container').style.display = 'block';
+            document.getElementById('status-text').style.display = 'block';
+            document.getElementById('status-text').innerText = `Subiendo ${files.length} archivo(s)...`;
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload', true);
+
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    document.getElementById('progress-bar').style.width = percentComplete + '%';
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status == 200) {
+                    document.getElementById('status-text').innerText = '¡Enviado!';
+                    document.getElementById('progress-bar').style.background = '#00d455';
+                    setTimeout(() => {
+                        document.getElementById('progress-container').style.display = 'none';
+                        document.getElementById('status-text').style.display = 'none';
+                        document.getElementById('progress-bar').style.width = '0%';
+                        document.getElementById('progress-bar').style.background = '#007fd4';
+                        loadFiles(); // Refresh list
+                    }, 2000);
+                } else {
+                    alert('Error al subir');
+                }
+            };
+
+            xhr.send(formData);
+        }
+
+        function loadFiles() {
+            fetch('/files')
+                .then(response => response.json())
+                .then(files => {
+                    const list = document.getElementById('fileList');
+                    list.innerHTML = '';
+                    if (files.length === 0) {
+                        list.innerHTML = '<div style="padding:20px; text-align:center; color:#555;">Carpeta vacía</div>';
+                        return;
+                    }
+                    
+                    files.forEach(f => {
+                        const icon = f.is_dir ? '📁' : '📄';
+                        const html = `
+                            <div class="file-item">
+                                <div class="file-info">
+                                    <span class="file-icon">${icon}</span>
+                                    <span class="file-name">${f.name}</span>
+                                </div>
+                                <a href="/download/${encodeURIComponent(f.name)}" class="btn-download" download>⏬</a>
+                            </div>
+                        `;
+                        list.innerHTML += html;
+                    });
+                });
+        }
+
+        // Load files on start and refresh every 5s
+        loadFiles();
+        setInterval(loadFiles, 5000);
+
+    </script>
+</body>
+</html>

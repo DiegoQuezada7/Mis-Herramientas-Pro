@@ -1,0 +1,35 @@
+# Ignorar carpetas de binarios (Mayusculas y espacios)
+Background Remover AI/
+Desktop Pet/
+Jet Engine/
+Lag Switch/
+Local AirDrop/
+Magic Eraser/
+Neutron Upscaler/
+PDF Tool/
+Pixel Master/
+Text Expander/
+Video Saver/
+WiFi Remote/
+
+# Ignorar artefactos de compilación de Python/PyInstaller
+build/
+dist/
+*.spec
+*.pkg
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Sistema y logs
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.log
+*.tmp
+.vscode/
+.idea/
+
+# Ignorar ejecutables sueltos
+*.exe
